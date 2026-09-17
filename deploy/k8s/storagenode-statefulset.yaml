@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: shardstore-node
+  labels:
+    app: shardstore-node
+spec:
+  serviceName: shardstore-node
+  replicas: 3
+  selector:
+    matchLabels:
+      app: shardstore-node
+  template:
+    metadata:
+      labels:
+        app: shardstore-node
+    spec:
+      containers:
+        - name: storagenode
+          image: shardstore/storagenode:latest
+          ports:
+            - containerPort: 9001
+              name: http
+          args:
+            - "--port"
+            - "9001"
+            - "--coordinator-url"
+            - "http://shardstore-coordinator:8080"
+            - "--data-dir"
+            - "/data"
+            - "--node-id"
+            - "$(POD_NAME)"
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shardstore-node
+spec:
+  selector:
+    app: shardstore-node
+  ports:
+    - port: 9001
+      targetPort: 9001
+      name: http
+  clusterIP: None

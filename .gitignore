@@ -1,0 +1,22 @@
+# Go build output
+/bin/
+/coordinator
+/storagenode
+*.exe
+*.test
+*.out
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local data / logs
+data/
+*.log
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store

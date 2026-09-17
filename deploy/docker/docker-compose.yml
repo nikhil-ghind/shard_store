@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  coordinator:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.coordinator
+    ports:
+      - "8080:8080"
+    command: ["--port", "8080"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/cluster/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  storage-node-1:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.storagenode
+    ports:
+      - "9001:9001"
+    command: ["--port", "9001", "--node-id", "node-1", "--coordinator-url", "http://coordinator:8080", "--data-dir", "/data"]
+    volumes:
+      - node1-data:/data
+    depends_on:
+      coordinator:
+        condition: service_healthy
+
+  storage-node-2:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.storagenode
+    ports:
+      - "9002:9002"
+    command: ["--port", "9002", "--node-id", "node-2", "--coordinator-url", "http://coordinator:8080", "--data-dir", "/data"]
+    volumes:
+      - node2-data:/data
+    depends_on:
+      coordinator:
+        condition: service_healthy
+
+  storage-node-3:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.storagenode
+    ports:
+      - "9003:9003"
+    command: ["--port", "9003", "--node-id", "node-3", "--coordinator-url", "http://coordinator:8080", "--data-dir", "/data"]
+    volumes:
+      - node3-data:/data
+    depends_on:
+      coordinator:
+        condition: service_healthy
+
+  cli:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.cli
+    environment:
+      SHARD_STORE_URL: http://coordinator:8080
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    profiles:
+      - cli
+
+volumes:
+  node1-data:
+  node2-data:
+  node3-data:

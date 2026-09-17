@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shardstore-coordinator
+  labels:
+    app: shardstore-coordinator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shardstore-coordinator
+  template:
+    metadata:
+      labels:
+        app: shardstore-coordinator
+    spec:
+      containers:
+        - name: coordinator
+          image: shardstore/coordinator:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          args: ["--port", "8080"]
+          livenessProbe:
+            httpGet:
+              path: /cluster/status
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /cluster/status
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shardstore-coordinator
+spec:
+  selector:
+    app: shardstore-coordinator
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  type: ClusterIP
